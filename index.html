@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Copy the Prompt</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; line-height: 1.5; }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 1.25rem; margin-bottom: .75rem; }
+  textarea { width: 100%; height: 320px; padding: 1rem; font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  button { margin-top: .75rem; padding: .7rem 1rem; border: 0; border-radius: 10px; cursor: pointer; }
+  .copy { background:#111; color:#fff; }
+  .note { font-size: .9rem; color:#666; margin-top:.5rem; }
+</style>
+<div class="wrap">
+  <h1>Copy this prompt</h1>
+  <textarea id="t" readonly>
+You are an instructor for the topic of human-computer interaction, teaching students about the benefits and limitations of the ‘human factors’ approach to design.
+Guide the students through the following activity
+
+  </textarea>
+  <button class="copy" id="b">Copy to clipboard</button>
+  <div class="note">Then paste it into any AI tool.</div>
+</div>
+<script>
+  const t = document.getElementById('t');
+  const b = document.getElementById('b');
+  // Auto-select on load for quick long-press copy on mobile
+  addEventListener('load', () => { t.focus(); t.select(); });
+  b.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(t.value);
+      b.textContent = 'Copied!';
+      setTimeout(()=> b.textContent = 'Copy to clipboard', 1500);
+    } catch {
+      // Fallback for older browsers
+      t.focus(); t.select(); document.execCommand('copy');
+    }
+  });
+</script>
