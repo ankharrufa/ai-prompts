@@ -1,45 +1,94 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Copy the Prompt</title>
-<style>
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; line-height: 1.5; }
-  .wrap { max-width: 800px; margin: 0 auto; }
-  h1 { font-size: 1.25rem; margin-bottom: .75rem; }
-  textarea { width: 100%; height: 320px; padding: 1rem; font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  button { margin-top: .75rem; padding: .7rem 1rem; border: 0; border-radius: 10px; cursor: pointer; }
-  .copy { background:#111; color:#fff; }
-  .note { font-size: .9rem; color:#666; margin-top:.5rem; }
-</style>
-<div class="wrap">
-  <h1>Copy this prompt</h1>
-  <textarea id="t" readonly>
-    
-You are playing the role of an instructor for the topic of human-computer interaction, teaching students about the benefits and limitations of the ‘human factors’ approach to design.
-
-You need to guide the students through the following activity: First ask them to 'discuss in a group the cognitive psychology view of humans as sensors, information processing unit, and responders and to type in some of the advantages and disadvantages of this model'. 
-
-Now wait for response. When you receive the response, check if they have missed any obvious points and give some directions for further thinking. Wait for response. When you recieve the response, give final feedback.
-
-  </textarea>
-  <button class="copy" id="b">Copy to clipboard</button>
-  <div class="note">Then paste it into any AI tool.</div>
-</div>
-<script>
-  const t = document.getElementById('t');
-  const b = document.getElementById('b');
-  // Auto-select on load for quick long-press copy on mobile
-  addEventListener('load', () => { t.focus(); t.select(); });
-  b.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(t.value);
-      b.textContent = 'Copied!';
-      setTimeout(()=> b.textContent = 'Copy to clipboard', 1500);
-    } catch {
-      // Fallback for older browsers
-      t.focus(); t.select(); document.execCommand('copy');
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI in Education Example Prompts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      line-height: 1.6;
+      color: #333;
     }
-  });
-</script>
+    h1 {
+      font-size: 2em;
+      margin-bottom: 0.3em;
+    }
+    h2 {
+      font-size: 1.4em;
+      margin-top: 2em;
+      margin-bottom: 0.3em;
+      color: #2a4d8f;
+    }
+    p {
+      margin-bottom: 1em;
+    }
+    .prompt-container {
+      margin-bottom: 2em;
+    }
+    .copy-btn {
+      display: block;
+      margin-left: auto;
+      margin-bottom: 0.5em;
+      padding: 4px 10px;
+      font-size: 0.9em;
+      background-color: #2a4d8f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background-color: #1e3670;
+    }
+    .prompt-box {
+      background-color: #f4f4f4;
+      border-left: 4px solid #2a4d8f;
+      padding: 1em;
+      font-family: "Courier New", Courier, monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AI in Education Example Prompts</h1>
+  <p>The page shows prompts that you can experiment with with any LLM of your choice.</p>
+
+  <h2>Helping with complex tasks</h2>
+  <p>Reducing the cognitive load of students when given complex tasks.</p>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+Identify the uncommon English words in the following paragraph (assume a GSCE level
+student) and give a very brief explanation of each.
+“The old city, a veritable palimpsest of historical change, lay shrouded in the perpetual gloom of a rain-swept autumn afternoon. Its streets, a labyrinth of cobbled alleys and forgotten thoroughfares, were a testament to centuries of relentless, unyielding modification.”
+
+    </div>
+  </div>
+
+  <h2>[PROMPT HEADING 2]</h2>
+  <p>[PROMPT DESCRIPTION 2]</p>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+[PASTE PROMPT TEXT HERE]
+    </div>
+  </div>
+
+  <!-- Duplicate the block above for more prompts -->
+
+  <script>
+    function copyPrompt(button) {
+      const promptBox = button.nextElementSibling;
+      const text = promptBox.innerText.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        button.textContent = "Copied!";
+        setTimeout(() => button.textContent = "Copy", 1500);
+      });
+    }
+  </script>
+
+</body>
+</html>
