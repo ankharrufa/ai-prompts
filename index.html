@@ -4,7 +4,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI in Education Example Prompts</title>
-  <style>
+  
+</head>
+<body>
+
+  <h1>AI in Education Example Prompts</h1>
+  <p>The page shows prompts that you can experiment with with any LLM of your choice.</p>
+
+  <h2>Helping with complex tasks</h2>
+  <p>Reducing the cognitive load of students when given complex tasks.</p>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+Identify the uncommon English words in the following paragraph (assume a GSCE level
+student) and give a very brief explanation of each.
+“The old city, a veritable palimpsest of historical change, lay shrouded in the perpetual gloom of a rain-swept autumn afternoon. Its streets, a labyrinth of cobbled alleys and forgotten thoroughfares, were a testament to centuries of relentless, unyielding modification.”
+
+    </div>
+  </div>
+<!--
+  <h2>[PROMPT HEADING]</h2>
+  <p>[PROMPT DESCRIPTION]</p>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+[PASTE PROMPT TEXT HERE]
+    </div>
+  </div>
+-->
+  <!-- Duplicate the block above for more prompts -->
+
+  <script>
+    function copyPrompt(button) {
+      const promptBox = button.nextElementSibling;
+      const text = promptBox.innerText.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        button.textContent = "Copied!";
+        setTimeout(() => button.textContent = "Copy", 1500);
+      });
+    }
+  </script>
+
+</body>
+<style>
     body {
       font-family: Arial, sans-serif;
       margin: 40px;
@@ -50,45 +92,4 @@
       white-space: pre-wrap;
     }
   </style>
-</head>
-<body>
-
-  <h1>AI in Education Example Prompts</h1>
-  <p>The page shows prompts that you can experiment with with any LLM of your choice.</p>
-
-  <h2>Helping with complex tasks</h2>
-  <p>Reducing the cognitive load of students when given complex tasks.</p>
-  <div class="prompt-container">
-    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
-    <div class="prompt-box">
-Identify the uncommon English words in the following paragraph (assume a GSCE level
-student) and give a very brief explanation of each.
-“The old city, a veritable palimpsest of historical change, lay shrouded in the perpetual gloom of a rain-swept autumn afternoon. Its streets, a labyrinth of cobbled alleys and forgotten thoroughfares, were a testament to centuries of relentless, unyielding modification.”
-
-    </div>
-  </div>
-
-  <h2>[PROMPT HEADING 2]</h2>
-  <p>[PROMPT DESCRIPTION 2]</p>
-  <div class="prompt-container">
-    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
-    <div class="prompt-box">
-[PASTE PROMPT TEXT HERE]
-    </div>
-  </div>
-
-  <!-- Duplicate the block above for more prompts -->
-
-  <script>
-    function copyPrompt(button) {
-      const promptBox = button.nextElementSibling;
-      const text = promptBox.innerText.trim();
-      navigator.clipboard.writeText(text).then(() => {
-        button.textContent = "Copied!";
-        setTimeout(() => button.textContent = "Copy", 1500);
-      });
-    }
-  </script>
-
-</body>
 </html>
