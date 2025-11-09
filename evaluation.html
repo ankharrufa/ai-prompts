@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluation prompts</title>
+  
+</head>
+<body>
+
+  <h1>Evaluation prompts</h1>
+  <p>The page shows prompts that you can experiment with using any LLM of your choice.</p>
+
+  <h2>Activity 1: Accounting software</h2>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+You are an HCI expert. I am looking into evaluating an accounting software and I need help in making decisions about the following points: 
+      1-What do you think are the top 3 aspects to evaluate? 
+      2-Can it be evaluated in a lab setting? 
+      3-Will it benefit from an experimental method for evaluation? To evaluate what? 
+      4-If you must choose between UX-expert evaluation or users (accountants) evaluation, which will you use?
+    </div>
+  </div>
+  <h2>Activity 2: Augmented reality location-based treasure hunt game
+</h2>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+Now apply the same four questions to evaluate an augmented reality location-based treasure hunt game
+
+    </div>
+  </div>
+  <h2>Activity 3: Software for schools to improve math skills for primary school students</h2>
+  <p>Generating practice questions for students following a given example</p>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+Now apply the same four questions to evaluate software for schools to improve math skills for primary school students
+    </div>
+  </div>
+  <h2>Summary</h2>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+Summarize key differences between these three applications and the implications on evaluation    </div>
+  </div>
+<!--
+    <h2>[PROMPT HEADING]</h2>
+  <p>[PROMPT DESCRIPTION]</p>
+  <div class="prompt-container">
+    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+    <div class="prompt-box">
+[PASTE PROMPT TEXT HERE]
+    </div>
+  </div>
+-->
+  <!-- Duplicate the block above for more prompts -->
+
+  <script>
+    function copyPrompt(button) {
+      const promptBox = button.nextElementSibling;
+      const text = promptBox.innerText.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        button.textContent = "Copied!";
+        setTimeout(() => button.textContent = "Copy", 1500);
+      });
+    }
+  </script>
+
+</body>
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 0.3em;
+    }
+    h2 {
+      font-size: 1.4em;
+      margin-top: 2em;
+      margin-bottom: 0.3em;
+      color: #2a4d8f;
+    }
+    p {
+      margin-bottom: 1em;
+    }
+    .prompt-container {
+      margin-bottom: 2em;
+    }
+    .copy-btn {
+      display: block;
+      margin-left: auto;
+      margin-bottom: 0.5em;
+      padding: 4px 10px;
+      font-size: 0.9em;
+      background-color: #2a4d8f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background-color: #1e3670;
+    }
+    .prompt-box {
+      background-color: #f4f4f4;
+      border-left: 4px solid #2a4d8f;
+      padding: 1em;
+      font-family: "Courier New", Courier, monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</html>
