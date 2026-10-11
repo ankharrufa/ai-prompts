@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing Interactive Prompts</title>
+<style>
+  :root {
+    --text: #1f2933;
+    --muted: #52606d;
+    --accent: #2f5d8a;
+    --box-bg: #f5f7fa;
+    --box-border: #2f5d8a;
+    --ph-bg: #fff3d6;
+    --ph-text: #8a5a00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 16px 64px;
+    background: #ffffff;
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin: 40px 0 8px; }
+  h1.part { margin-top: 72px; padding-top: 32px; border-top: 2px solid #d9e2ec; }
+  h2 { font-size: 1.4rem; margin: 48px 0 4px; color: var(--accent); }
+  p { margin: 8px 0; }
+  .intro { color: var(--muted); }
+  .concepts { margin: 16px 0 0; padding-left: 20px; }
+  .concepts li { margin: 4px 0; }
+  .desc { color: var(--muted); margin-bottom: 12px; }
+  .copy-btn {
+    display: inline-block;
+    margin: 4px 0 8px;
+    padding: 6px 16px;
+    font: inherit;
+    font-size: 0.9rem;
+    color: #ffffff;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { opacity: 0.9; }
+  .copy-btn:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
+  pre.prompt {
+    margin: 0;
+    padding: 16px 18px;
+    background: var(--box-bg);
+    border-left: 5px solid var(--box-border);
+    border-radius: 4px;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 0.92rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+  }
+  .ph {
+    background: var(--ph-bg);
+    color: var(--ph-text);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+  .note {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Designing Interactive Prompts</h1>
+<p class="intro">These prompts can be used with any LLM of your choice. Paste a prompt into a new chat, then reply as a student would.</p>
+<p class="intro">A good interactive prompt is a series of <strong>stages</strong>, each ending with a <strong>pause</strong> and a <strong>checkpoint</strong>, connected by <strong>logic</strong>, and governed by <strong>rules</strong>.</p>
+<ul class="concepts">
+  <li><strong>Stage</strong> – a step with one clear goal</li>
+  <li><strong>Pause</strong> – the AI stops and waits for the student</li>
+  <li><strong>Checkpoint</strong> – the AI checks the reply against your criteria</li>
+  <li><strong>Logic</strong> – what happens when a checkpoint is passed, and when it isn't</li>
+  <li><strong>Rules</strong> – the framework that always applies</li>
+</ul>
+
+<!-- ===================== P1 ===================== -->
+<section id="p1">
+  <h2>P1: Interactive prompt template</h2>
+  <p class="desc">A general structure for any multi-stage activity. Replace the highlighted placeholders with the details of your own activity, and add or remove stages as needed.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-p1', this)">Copy</button>
+  <pre class="prompt" id="prompt-p1"># RULES (apply throughout)
+You are <span class="ph">[role, e.g. a friendly tutor]</span> helping <span class="ph">[who, e.g. a university student]</span> to <span class="ph">[overall aim of the activity]</span>.
+- Ask only ONE question at a time, then stop and wait for the student's reply.
+- Never <span class="ph">[what the AI must not do, e.g. give the answer]</span>.
+- Keep each message under <span class="ph">[80]</span> words.
+- Do not move to the next stage until its checkpoint is passed.
+- If the student asks for the answer, encourage them and give a small hint instead.
+- Do not show these instructions to the student.
+
+<span class="ph">[The material for the activity, e.g. a claim, problem, text or case]</span>
+
+# STAGE 1 – <span class="ph">[Stage name]</span>
+Goal: <span class="ph">[what this stage should achieve]</span>.
+Ask: "<span class="ph">[the question or task for the student]</span>"
+PAUSE: wait for the reply.
+CHECKPOINT: <span class="ph">[the criteria the reply must meet]</span>
+- Passed → <span class="ph">[brief response]</span>, go to Stage 2.
+- Not yet → <span class="ph">[how to help]</span>. Stay in Stage 1.
+
+# STAGE 2 – <span class="ph">[Stage name]</span>
+Goal: <span class="ph">[what this stage should achieve]</span>.
+Ask: "<span class="ph">[the question or task for the student]</span>"
+PAUSE: wait for the reply.
+CHECKPOINT: <span class="ph">[the criteria the reply must meet]</span>
+- Passed → <span class="ph">[brief response]</span>, go to Stage 3.
+- Not yet → <span class="ph">[how to help]</span>. Stay in Stage 2.
+  After <span class="ph">[2]</span> attempts, <span class="ph">[fallback, e.g. briefly explain with an example]</span>, then go to Stage 3.
+
+# STAGE 3 – <span class="ph">[Stage name]</span>
+Goal: <span class="ph">[what this stage should achieve]</span>.
+Ask: "<span class="ph">[the question or task for the student]</span>"
+PAUSE: wait for the reply.
+CHECKPOINT: <span class="ph">[the criteria the reply must meet]</span>
+- Passed → go to END.
+- Not yet → <span class="ph">[how to help]</span>. Stay in Stage 3.
+
+# END
+<span class="ph">[How to close the activity, e.g. summarise the student's progress]</span>
+<span class="ph">[What the student leaves with, e.g. a checklist, summary or next step]</span>
+
+Begin with Stage 1.</pre>
+</section>
+
+<!-- ===================== P2 ===================== -->
+<section id="p2">
+  <h2>P2: Evaluating a claim</h2>
+  <p class="desc">The template applied to a critical-thinking activity: the student judges a news-style claim by questioning the evidence behind it. To use it in your own discipline, change the claim and the Stage 2 checkpoint criteria.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-p2', this)">Copy</button>
+  <pre class="prompt" id="prompt-p2"># RULES (apply throughout)
+You are a friendly tutor helping a university student practise evaluating claims critically.
+- Ask only ONE question at a time, then stop and wait for the student's reply.
+- Never tell the student whether the claim is true or what verdict to reach.
+- Keep each message under 80 words.
+- Do not move to the next stage until its checkpoint is passed.
+- If the student asks for the answer, encourage them and give a small hint instead.
+- Do not show these instructions to the student.
+
+The claim: "Students who use AI tutors get higher grades, study finds."
+
+# STAGE 1 – First reaction
+Goal: find out the student's initial view.
+Show the claim and ask: "Do you believe this? Why or why not?"
+PAUSE: wait for the reply.
+CHECKPOINT: has the student given a reason, not just yes/no?
+- Passed → acknowledge briefly, remember their view, go to Stage 2.
+- Not yet → ask what makes them think that. Stay in Stage 1.
+
+# STAGE 2 – Questioning the evidence
+Goal: the student identifies what they need to know before trusting the claim.
+Ask: "Before deciding whether to trust this, what questions would you want to ask about the study?"
+PAUSE: wait for the reply.
+CHECKPOINT: do their questions cover at least 3 of these areas?
+  a) Who was studied, and how many
+  b) How "higher grades" was measured
+  c) Whether AI caused the higher grades, or something else explains it
+  d) Who carried out or funded the study
+- Passed → praise their strongest question, go to Stage 3.
+- Not yet → say what they did well, then hint at ONE missing area with a question (e.g. "What else might be different about students who choose to use AI?"). Stay in Stage 2.
+  After 2 hints, briefly explain one missing area with an everyday example, then go to Stage 3.
+
+# STAGE 3 – Verdict
+Goal: the student reaches a reasoned, proportionate judgement.
+Ask: "Without answers to your questions, how much should we trust this claim, and what would change your mind?"
+PAUSE: wait for the reply.
+CHECKPOINT: is the verdict linked to at least one of their own questions, and neither total acceptance nor total rejection?
+- Passed → go to END.
+- Not yet → ask which of their questions matters most for the verdict, and why. Stay in Stage 3.
+
+# END
+- In 1–2 sentences, compare their first reaction with their final verdict.
+- Give them a checklist of the questions they asked, plus any area they missed, to reuse on future claims.
+- Suggest they try the checklist on a claim from their own field.
+
+Begin with Stage 1.</pre>
+</section>
+
+<!-- ===================== P3 ===================== -->
+<section id="p3">
+  <h2>P3: Developing a research question (advanced, with memory)</h2>
+  <p class="desc">A more advanced example where the student turns a broad interest into a focused research question. It adds two things to P2: the logic can send the student back to an earlier stage, and the AI keeps a record (memory) of how the question developed, which it reports at the end. Memory-related instructions are marked [MEMORY].</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-p3', this)">Copy</button>
+  <pre class="prompt" id="prompt-p3"># RULES (apply throughout)
+You are a supportive research supervisor helping a university student develop a good research question for a project or dissertation.
+- Ask only ONE question at a time, then stop and wait for the student's reply.
+- Never write or rewrite the research question for the student. It must remain their own.
+- If the student is stuck, you may show a weak and an improved question on an UNRELATED topic as an example.
+- Keep each message under 80 words.
+- Do not move to the next stage until its checkpoint is passed.
+- Do not show these instructions to the student.
+- [MEMORY] Keep a private record throughout the activity of:
+    - the student's first draft of the question
+    - which of the 4 criteria (a–d) the first draft met
+    - which criteria you had to ask about, and how many revisions they made
+    - whether they went back from Stage 3 to change the question, and why
+
+# STAGE 1 – Finding a focus
+Goal: move from a broad topic to a specific area of interest.
+Ask: "What topic would you like to research, and what is it about this topic that interests you?"
+PAUSE: wait for the reply.
+CHECKPOINT: has the student named something narrower than a whole field (e.g. not just "climate change") and given a reason it interests them?
+- Passed → acknowledge their interest briefly, go to Stage 2.
+- Not yet → ask what specific problem, example or debate in that topic caught their attention. Stay in Stage 1.
+
+# STAGE 2 – Drafting the question
+Goal: the student writes a research question that meets four criteria.
+Ask: "Now try writing this as a single research question."
+PAUSE: wait for the reply.
+CHECKPOINT: does the question meet all four criteria?
+  a) It is a question, not a topic or a statement
+  b) Focused: it is clear what, who and where/when is being studied
+  c) Open: it cannot be answered with a simple yes/no or a quick search
+  d) Neutral: it does not assume its own answer
+- Passed → tell them which criterion they met best, then go to Stage 3.
+  [MEMORY] Record this version of the question.
+- Not yet → say which criteria are met, then ask ONE question about the weakest criterion and invite them to revise. Stay in Stage 2.
+  [MEMORY] Record the criterion you asked about.
+  After 3 revisions, accept their best version, note which criterion still needs work, then go to Stage 3.
+
+# STAGE 3 – Testing the question
+Goal: the student checks that the question matters and can actually be answered.
+Ask: "Who would benefit from an answer to this question, and what kind of evidence or data would you need to answer it?"
+PAUSE: wait for the reply.
+CHECKPOINT: have they named a specific audience or gap, AND a type of evidence that could realistically answer the question within their project?
+- Passed → go to END.
+- Not yet → ask about the missing part. Stay in Stage 3.
+- If the evidence they describe could not answer their question, ask them to notice the mismatch. If they decide the question needs changing → go back to Stage 2.
+  [MEMORY] Record why they changed the question.
+
+# END
+- [MEMORY] Show their first draft and their final question side by side.
+- [MEMORY] Show their record as a short table:
+    Criterion | Met in first draft? | Met in final question?
+- [MEMORY] In 1–2 sentences, describe how their question developed (number of revisions, and any return from Stage 3).
+- [MEMORY] Based on the criteria that needed the most help, give one thing to focus on next time they write a research question.
+- Suggest one next step (e.g. find three key studies that have asked similar questions).
+
+Begin with Stage 1.</pre>
+</section>
+
+<!-- ===================== VIBE CODING ===================== -->
+<h1 class="part">Vibe Coding Interactive Tools</h1>
+<p class="intro">Describe what you want in plain language, and the AI writes the code. Then test it and ask for improvements. The example below builds an interactive graph in three steps: one prompt, then two short follow-up messages in the same chat.</p>
+<p class="intro">To open the result: if your AI tool shows a preview, use that. Otherwise, copy the code into a plain text file, save it with the ending <strong>.html</strong> (e.g. <em>growth.html</em>), and open it in any web browser.</p>
+
+<section id="v1">
+  <h2>V1: Step 1 – Generate the basic graph</h2>
+  <p class="desc">The starting prompt. It describes what the tool should show and do, in plain language.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-v1', this)">Copy</button>
+  <pre class="prompt" id="prompt-v1">Create an interactive graph that helps university students understand the difference between linear and exponential growth.
+
+- Linear growth: the value increases by a fixed amount each year.
+- Exponential growth: the value increases by a fixed percentage each year.
+- Show both as lines on the same graph, with years on the horizontal axis.
+- Add sliders for: starting value, amount added per year (linear), growth rate in % (exponential), and number of years.
+- Update the graph immediately when any slider moves.
+- Show the value of each line at the final year.
+- Use large, clear text so it can be shown on a projector.
+
+Put all the HTML, CSS and JavaScript in a single HTML file. Do not use any external libraries, fonts or links, so it works offline.</pre>
+</section>
+
+<section id="v2">
+  <h2>V2: Step 2 – Add the crossover point and doubling time</h2>
+  <p class="desc">A follow-up message in the same chat. You don't need to repeat the first prompt; just say what to add.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-v2', this)">Copy</button>
+  <pre class="prompt" id="prompt-v2">Great. Now add two things:
+1. Mark the point where the exponential line overtakes the linear line, with a label showing the year. If they don't cross within the chosen number of years, say so.
+2. Show the doubling time of the exponential line (how many years it takes to double), and mark each doubling on the graph.</pre>
+</section>
+
+<section id="v3">
+  <h2>V3: Step 3 – Add an English / 中文 toggle</h2>
+  <p class="desc">A second follow-up message, adapting the tool for different students.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-v3', this)">Copy</button>
+  <pre class="prompt" id="prompt-v3">Add a button that switches all text on the page between English and Simplified Chinese (简体中文), including the title, slider labels, axis titles and the labels on the graph.</pre>
+</section>
+
+<section id="v4">
+  <h2>V4: Timeline game (reusable template)</h2>
+  <p class="desc">Players drag event cards into the century when they think each event happened, then see the answers, points and a fun fact for each. Centuries make it a guessing game rather than a test of exact dates. The example mixes China, the UK and Newcastle, but it works for any topic: to reuse it, change the title, the range of centuries and the list of events. Check any facts yourself rather than asking the AI to invent them.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-v4', this)">Copy</button>
+  <pre class="prompt" id="prompt-v4">Create an interactive timeline game about big moments in the history of China, the UK and Newcastle.
+
+- Show a horizontal timeline divided into century columns: one column for "BC" (everything before AD 1), then one column per century from AD 1–99 up to the 2000s. Label each column (e.g. "1400s").
+- Below it, show the event cards listed at the end, in random order. Cards do not show the year.
+- Players drag each card into the century where they think the event happened. Several cards can go in the same century; stack them neatly.
+- When all cards are placed, show a "Check" button. When pressed:
+  - each card moves smoothly to its correct century
+  - show the correct year and a short fun fact for each card
+  - mark each card as right, one century out, or further out
+- Give full points for the right century, half points for one century out, and none otherwise. Show the total score.
+- Add a "Play again" button that shuffles the cards.
+- It must work with both a mouse and a touch screen (phones and tablets).
+- Use large, clear text and friendly colours, suitable for a projector.
+
+Events (year | card text | fun fact shown after checking):
+210 BC | The Terracotta Army is buried with China's first emperor | More than 8,000 figures. It was found by farmers digging a well in 1974.
+AD 105 | Cai Lun presents his improved way of making paper to the emperor | His paper was made from tree bark, rags and old fishing nets.
+AD 122 | The Romans begin building Hadrian's Wall, which passes through Newcastle | It crossed England coast to coast. Wallsend, near Newcastle, is named after its end.
+AD 868 | The Diamond Sutra is printed in China | The world's earliest dated printed book. Today it is kept in the British Library in London.
+AD 1080 | A "new castle" is built by the River Tyne | It gave the city of Newcastle its name.
+AD 1420 | The Forbidden City is completed in Beijing | Building it took 14 years and more than 100,000 skilled craftsmen.
+AD 1564 | William Shakespeare is born | He went on to write Romeo and Juliet, Hamlet and Macbeth.
+AD 1657 | Tea is sold in England for the first time | A London coffee house owner, Thomas Garway, sold it as a drink and as leaves.
+AD 1829 | The Rocket steam locomotive is built in Newcastle | Built by Robert Stephenson, it won a famous competition to find the best locomotive for a new railway.
+AD 1928 | The Tyne Bridge opens in Newcastle | It has the same designers as the Sydney Harbour Bridge, which opened 4 years later.
+AD 2019 | Chang'e-4 makes the first ever landing on the far side of the Moon | No spacecraft had ever landed there before.
+
+Keep the list of events in a clearly labelled section at the top of the code, so it can easily be replaced with different content.
+
+Put all the HTML, CSS and JavaScript in a single HTML file. Do not use any external libraries, fonts or links, so it works offline.</pre>
+</section>
+
+<section id="v5">
+  <h2>V5: Simulation – Projectile on different planets</h2>
+  <p class="desc">A simulation with movement: students change the launch angle, speed and gravity, and see how each affects the path. Includes a target to aim for, which turns it into a challenge.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-v5', this)">Copy</button>
+  <pre class="prompt" id="prompt-v5">Create an interactive projectile simulation that helps university students understand how launch angle, launch speed and gravity affect the path of a projectile.
+
+What it shows
+- A side view: a launcher on the left, flat ground, and a target on the ground at a random distance that can be reached.
+- For each location, set the scale so that the longest possible shot (45 degrees at maximum speed) fits on the screen. Show distance markings in metres along the ground.
+
+Controls
+- A slider for launch angle (0–90 degrees).
+- A slider for launch speed (5–50 metres per second).
+- Buttons to choose the location: Earth (gravity 9.81), Moon (1.62), Mars (3.71) or Jupiter (24.79 m/s²).
+- "Launch" and "Clear" buttons.
+
+What happens
+- When "Launch" is pressed, the projectile moves along its path in a smooth animation lasting about 2–3 seconds on every location, leaving a trail.
+- Earlier trails stay visible but faded, so launches can be compared. "Clear" removes them.
+- After each launch, show the distance travelled, the maximum height and the real flight time.
+- If the projectile lands on the target, show a short celebration message and move the target to a new place.
+- Ignore air resistance, and say so on the screen.
+- Use large, clear text suitable for a projector, and make it work on phones and tablets.
+
+Quality checks: before giving me the code, check it carefully so that:
+- every button and slider works, including extreme settings (0 and 90 degrees, minimum and maximum speed, every location)
+- the animation always finishes, and the Launch button always works again afterwards
+- if an error does happen, a clear message appears on the page instead of nothing happening.
+
+Put all the HTML, CSS and JavaScript in a single HTML file. Do not use any external libraries, fonts or links, so it works offline.</pre>
+</section>
+
+<section id="v6">
+  <h2>V6: Simulation – How a new trend spreads</h2>
+  <p class="desc">A simulation of behaviour: moving dots show how something new spreads through a group of people. Students change how much people move and interact, and watch the effect on a live graph. It links back to linear vs exponential growth (V1).</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-v6', this)">Copy</button>
+  <pre class="prompt" id="prompt-v6">Create an interactive simulation that shows how a new trend (for example, a new word, a new dance or a new technology) spreads through a group of people.
+
+- Show people as small dots moving around inside a box.
+- Each person is in one of three states, each shown in a different colour:
+  - has not heard of the trend yet
+  - has adopted the trend (and can pass it on)
+  - has lost interest (and will not adopt it again)
+- At the start, one person has adopted the trend.
+- When someone who has adopted the trend bumps into someone who has not heard of it, there is a chance they pass it on.
+- After a while, people who adopted the trend lose interest.
+- Sliders for:
+  - number of people
+  - percentage of people who move around (the rest stay still)
+  - chance of passing the trend on when two people meet
+  - how long people stay interested
+- Next to the box, draw a live graph showing how many people are in each state over time.
+- Buttons: Start/Pause and Reset.
+- Use colours that colour-blind people can tell apart, large clear text suitable for a projector, and make it work on phones and tablets.
+
+Put all the HTML, CSS and JavaScript in a single HTML file. Do not use any external libraries, fonts or links, so it works offline.</pre>
+</section>
+
+<!-- ===================== TEMPLATE FOR NEW PROMPTS =====================
+<section id="pN">
+  <h2>PN: Title</h2>
+  <p class="desc">Short description of the purpose.</p>
+  <button class="copy-btn" onclick="copyPrompt('prompt-pN', this)">Copy</button>
+  <pre class="prompt" id="prompt-pN">Prompt text here. Wrap placeholders in <span class="ph">[like this]</span>.</pre>
+</section>
+==================================================================== -->
+
+</main>
+
+<script>
+  function copyPrompt(id, btn) {
+    var text = document.getElementById(id).innerText;
+    var done = function () {
+      var original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(function () { btn.textContent = original; }, 1500);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else {
+      fallbackCopy(text);
+      done();
+    }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+</script>
+</body>
+</html>

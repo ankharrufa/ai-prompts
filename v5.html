@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projectile on Different Planets</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1f2933;
+    --muted: #5b6672;
+    --panel: #f5f7fa;
+    --accent: #2f5d8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 16px 40px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 20px;
+    line-height: 1.45;
+  }
+  main { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 2.1rem; margin: 24px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .layout { display: grid; grid-template-columns: 330px 1fr; gap: 24px; align-items: start; }
+  .controls { background: var(--panel); border-radius: 12px; padding: 18px; }
+  .control { margin-bottom: 18px; }
+  .control label { display: flex; justify-content: space-between; font-weight: 600; font-size: 1rem; }
+  output { font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; height: 32px; accent-color: #3e4a57; }
+  .group-label { font-weight: 600; font-size: 1rem; margin-bottom: 6px; }
+  .planets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+  .planet {
+    font: inherit; font-size: 0.95rem; padding: 8px 6px; border-radius: 8px;
+    border: 2px solid #c7cfd8; background: #fff; color: var(--ink); cursor: pointer; line-height: 1.2;
+  }
+  .planet small { display: block; color: var(--muted); font-size: 0.78rem; }
+  .planet.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .planet.on small { color: #d9dee4; }
+  .buttons { display: flex; gap: 10px; }
+  .btn {
+    flex: 1; font: inherit; font-weight: 700; font-size: 1.05rem; padding: 12px; border-radius: 8px;
+    border: none; cursor: pointer; color: #fff; background: var(--accent);
+  }
+  .btn.secondary { background: #fff; color: var(--ink); border: 2px solid #c7cfd8; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .stat { background: var(--panel); border-radius: 10px; padding: 10px 12px; }
+  .stat .k { font-size: 0.85rem; color: var(--muted); }
+  .stat .v { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chart-box { position: relative; }
+  canvas { width: 100%; height: 480px; display: block; border-radius: 12px; }
+  .message {
+    position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%) scale(0.6);
+    background: #1f2933; color: #fff; font-size: 1.8rem; font-weight: 800;
+    padding: 12px 26px; border-radius: 14px; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s; white-space: nowrap;
+  }
+  .message.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .error { display: none; background: #fdecea; color: #8a1c1c; border-radius: 8px; padding: 10px 12px; font-weight: 600; margin-top: 10px; }
+  .note { color: var(--muted); font-size: 0.95rem; margin-top: 10px; }
+  @media (max-width: 860px) {
+    body { font-size: 17px; }
+    h1 { font-size: 1.6rem; }
+    .layout { grid-template-columns: 1fr; }
+    canvas { height: 320px; }
+    .stat .v { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Projectile on Different Planets</h1>
+  <p class="sub">Change the angle, speed and gravity. Can you hit the target?</p>
+
+  <div class="layout">
+    <div class="controls">
+      <div class="control">
+        <label>Launch angle <output id="angleOut"></output></label>
+        <input type="range" id="angle" min="0" max="90" step="1" value="45">
+      </div>
+      <div class="control">
+        <label>Launch speed <output id="speedOut"></output></label>
+        <input type="range" id="speed" min="5" max="50" step="1" value="20">
+      </div>
+      <div class="group-label">Location</div>
+      <div class="planets" id="planets"></div>
+      <div class="buttons">
+        <button class="btn" id="launch">Launch</button>
+        <button class="btn secondary" id="clear">Clear</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="chart-box">
+        <canvas id="scene"></canvas>
+        <div class="message" id="message">🎯 Hit!</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Distance</div><div class="v" id="dist">–</div></div>
+        <div class="stat"><div class="k">Maximum height</div><div class="v" id="height">–</div></div>
+        <div class="stat"><div class="k">Flight time</div><div class="v" id="time">–</div></div>
+      </div>
+      <p class="error" id="errorBox"></p>
+      <p class="note">Air resistance is ignored in this simulation, so real projectiles would not travel quite as far (except on the Moon, which has no air).</p>
+    </div>
+  </div>
+</main>
+
+<script>
+/* If anything goes wrong, say so on the page instead of failing silently. */
+window.addEventListener("error", e => {
+  const box = document.getElementById("errorBox");
+  box.textContent = "Something went wrong: " + e.message + ". Please reload the page.";
+  box.style.display = "block";
+  const btn = document.getElementById("launch");
+  if (btn) btn.disabled = false;
+});
+
+const PLANETS = [
+  { name: "Earth",   g: 9.81,  ground: "#5f8f4e", sky: "#e8f2fb", trail: "#2f6db5" },
+  { name: "Moon",    g: 1.62,  ground: "#9a9a9a", sky: "#e9eaee", trail: "#5b6672" },
+  { name: "Mars",    g: 3.71,  ground: "#b5541c", sky: "#f7e9df", trail: "#b5541c" },
+  { name: "Jupiter", g: 24.79, ground: "#b8935a", sky: "#f6efe3", trail: "#7b3fa0" }
+];
+const MAX_SPEED = 50;          // must match the speed slider maximum
+const ANIM_SECONDS = 2.5;      // every launch animation lasts this long
+
+const $ = id => document.getElementById(id);
+const canvas = $("scene");
+const ctx = canvas.getContext("2d");
+let planet = PLANETS[0];
+let trails = [];               // finished launches: { pts, colour }
+let flight = null;             // current launch being animated
+let target = null;             // { x, w }
+let celebrating = false;
+
+/* ---------- physics ---------- */
+function trajectory(v, deg, g) {
+  const a = deg * Math.PI / 180;
+  const vx = v * Math.cos(a), vy = v * Math.sin(a);
+  const T = 2 * vy / g;
+  const pts = [];
+  const n = 200;
+  for (let i = 0; i <= n; i++) {
+    const t = (i / n) * T;
+    pts.push({ t, x: vx * t, y: Math.max(0, vy * t - 0.5 * g * t * t) });
+  }
+  return { pts, T, range: vx * T, H: (vy * vy) / (2 * g) };
+}
+
+function newTarget() {
+  const maxRange = (MAX_SPEED * MAX_SPEED) / planet.g;           // longest possible shot
+  const x = maxRange * (0.12 + Math.random() * 0.6);
+  target = { x, w: Math.max(2, maxRange * 0.05) };
+}
+
+/* ---------- view: fixed scale for each planet ---------- */
+// The longest possible shot (45 degrees at maximum speed) always fits on screen.
+// The highest possible shot (straight up) reaches half that distance.
+function viewSize() {
+  const maxRange = (MAX_SPEED * MAX_SPEED) / planet.g;
+  return { w: maxRange * 1.06, h: maxRange * 0.5 * 1.08 };
+}
+
+function niceStep(range, target) {
+  const raw = range / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / mag;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * mag;
+}
+
+function draw(currentIndex) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const small = W < 500;
+  const pad = { l: small ? 30 : 50, r: 16, t: 16, b: small ? 46 : 54 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  const view = viewSize();
+  const scale = Math.min(pw / view.w, ph / view.h);   // same scale both ways: true shape
+  const X = x => pad.l + x * scale;
+  const Y = y => pad.t + ph - y * scale;
+
+  // sky and ground
+  ctx.fillStyle = planet.sky; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = planet.ground; ctx.fillRect(0, pad.t + ph, W, H - pad.t - ph);
+
+  // distance markings
+  const font = (small ? 12 : 15) + "px -apple-system, Segoe UI, Arial, sans-serif";
+  ctx.font = font; ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const step = niceStep(pw / scale, small ? 4 : 8);
+  for (let x = 0; X(x) <= W - 10; x += step) {
+    ctx.fillRect(X(x) - 1, pad.t + ph, 2, 8);
+    ctx.fillText(Math.round(x) + " m", X(x), pad.t + ph + 12);
+  }
+
+  // target
+  const tx0 = X(target.x - target.w / 2), tx1 = X(target.x + target.w / 2);
+  ctx.fillStyle = "#c0392b"; ctx.fillRect(tx0, pad.t + ph - 6, Math.max(6, tx1 - tx0), 8);
+  ctx.fillStyle = "#c0392b";
+  ctx.beginPath(); ctx.moveTo(X(target.x), pad.t + ph - 6); ctx.lineTo(X(target.x), pad.t + ph - 40); ctx.lineWidth = 2; ctx.strokeStyle = "#1f2933"; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X(target.x), pad.t + ph - 40); ctx.lineTo(X(target.x) + 18, pad.t + ph - 33); ctx.lineTo(X(target.x), pad.t + ph - 26); ctx.fill();
+
+  // old trails (faded)
+  trails.forEach((tr, i) => {
+    const age = trails.length - i;
+    ctx.globalAlpha = Math.max(0.15, 0.55 - age * 0.08);
+    ctx.strokeStyle = tr.colour; ctx.lineWidth = 3;
+    ctx.beginPath();
+    tr.pts.forEach((p, j) => (j ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y))));
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+
+  // current flight
+  if (flight) {
+    const last = Math.max(0, Math.min(currentIndex ?? flight.pts.length - 1, flight.pts.length - 1));
+    ctx.strokeStyle = flight.colour; ctx.lineWidth = 4;
+    ctx.beginPath();
+    for (let j = 0; j <= last; j++) {
+      const p = flight.pts[j];
+      j ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y));
+    }
+    ctx.stroke();
+    const p = flight.pts[last];
+    ctx.fillStyle = "#1f2933";
+    ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), small ? 6 : 8, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // launcher, pointing at the chosen angle
+  const a = +$("angle").value * Math.PI / 180;
+  const len = small ? 26 : 38;
+  ctx.save();
+  ctx.translate(X(0), Y(0));
+  ctx.rotate(-a);
+  ctx.fillStyle = "#3e4a57";
+  ctx.fillRect(0, -6, len, 12);
+  ctx.restore();
+  ctx.fillStyle = "#1f2933";
+  ctx.beginPath(); ctx.arc(X(0), Y(0), small ? 10 : 14, Math.PI, 0); ctx.fill();
+
+  // planet label
+  ctx.font = "700 " + (small ? 15 : 19) + "px -apple-system, Segoe UI, Arial, sans-serif";
+  ctx.fillStyle = "#1f2933"; ctx.textAlign = "right"; ctx.textBaseline = "top";
+  ctx.fillText(planet.name + " · gravity " + planet.g + " m/s²", W - 14, 12);
+}
+
+/* ---------- launching ---------- */
+function showStats(tr) {
+  const f = v => (v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString("en"));
+  $("dist").textContent = tr ? f(tr.range) + " m" : "–";
+  $("height").textContent = tr ? f(tr.H) + " m" : "–";
+  $("time").textContent = tr ? f(tr.T) + " s" : "–";
+}
+
+function launch() {
+  if (flight && flight.running) return;
+  if (flight) trails.push({ pts: flight.pts, colour: flight.colour });
+  const tr = trajectory(+$("speed").value, +$("angle").value, planet.g);
+  flight = { ...tr, colour: planet.trail, running: true };
+  showStats(null);
+  $("launch").disabled = true;
+  // Every launch animates in about ANIM_SECONDS, whatever the planet.
+  const last = tr.pts.length - 1;
+  let start = null;
+  function frame(now) {
+    if (start === null) start = now;                  // time the animation from its own first frame
+    const progress = tr.T > 0 ? Math.min(1, Math.max(0, (now - start) / 1000 / ANIM_SECONDS)) : 1;
+    const idx = Math.round(progress * last);
+    draw(idx);
+    if (idx < last) { requestAnimationFrame(frame); return; }
+    flight.running = false;
+    $("launch").disabled = false;
+    showStats(tr);
+    if (Math.abs(tr.range - target.x) <= target.w / 2) celebrate();
+  }
+  requestAnimationFrame(frame);
+}
+
+function celebrate() {
+  celebrating = true;
+  $("message").classList.add("show");
+  setTimeout(() => {
+    $("message").classList.remove("show");
+    newTarget();
+    celebrating = false;
+    draw();
+  }, 1600);
+}
+
+/* ---------- controls ---------- */
+function updateLabels() {
+  $("angleOut").textContent = $("angle").value + "°";
+  $("speedOut").textContent = $("speed").value + " m/s";
+}
+
+PLANETS.forEach((p, i) => {
+  const b = document.createElement("button");
+  b.className = "planet" + (i === 0 ? " on" : "");
+  b.innerHTML = p.name + "<small>g = " + p.g + " m/s²</small>";
+  b.addEventListener("click", () => {
+    if (flight && flight.running) return;
+    planet = p;
+    document.querySelectorAll(".planet").forEach(x => x.classList.toggle("on", x === b));
+    trails = []; flight = null; showStats(null);
+    newTarget(); draw();
+  });
+  $("planets").appendChild(b);
+});
+
+["angle", "speed"].forEach(id => $(id).addEventListener("input", () => {
+  updateLabels();
+  if (!(flight && flight.running)) draw();
+}));
+$("launch").addEventListener("click", launch);
+$("clear").addEventListener("click", () => {
+  if (flight && flight.running) return;
+  trails = []; flight = null; showStats(null); draw();
+});
+window.addEventListener("resize", () => { if (!(flight && flight.running)) draw(); });
+
+updateLabels();
+newTarget();
+draw();
+</script>
+</body>
+</html>

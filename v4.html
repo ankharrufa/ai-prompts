@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Challenge</title>
+<style>
+  :root {
+    --bg: #fbf8f3;
+    --ink: #1f2933;
+    --muted: #5b6672;
+    --axis: #3e4a57;
+    --card: #ffffff;
+    --line: #d9dee4;
+    --accent: #2f5d8a;
+    --good: #2e7d4f;
+    --warn: #b5541c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 16px 48px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 18px;
+    line-height: 1.45;
+  }
+  main { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 2rem; margin: 28px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+
+  /* ---------- timeline ---------- */
+  .timeline-wrap {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px 8px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .band { position: relative; height: 230px; }
+  .col {
+    position: absolute; top: 0; bottom: 34px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .col.alt { background: #f3f5f8; }
+  .col.hover { background: #dbe8f5; }
+  .col-label {
+    position: absolute; bottom: 4px; transform: translateX(-50%);
+    font-size: 0.78rem; color: var(--muted); white-space: nowrap;
+  }
+  .axis {
+    position: absolute; left: 0; right: 0; bottom: 30px;
+    height: 4px; background: var(--axis); border-radius: 2px;
+  }
+  .band-hint {
+    position: absolute; left: 0; right: 0; top: 70px;
+    text-align: center; color: #9aa5b1; font-size: 0.95rem; pointer-events: none;
+  }
+  .marker {
+    position: absolute;
+    border-radius: 50%;
+    color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transform: translateX(-50%);
+    cursor: grab; touch-action: none; user-select: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    transition: left 0.9s cubic-bezier(.3,.8,.3,1), bottom 0.9s cubic-bezier(.3,.8,.3,1);
+    z-index: 2;
+  }
+  .readout {
+    position: absolute; top: -4px; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 0.9rem; font-weight: 600;
+    padding: 2px 8px; border-radius: 6px; pointer-events: none; display: none; z-index: 3;
+  }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 14px; }
+  button {
+    font: inherit; font-weight: 600; font-size: 1rem;
+    padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+    color: #fff; background: var(--accent);
+  }
+  button:disabled { background: #b8c2cc; cursor: not-allowed; }
+  button:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
+  .status { color: var(--muted); }
+  .score { font-size: 1.3rem; font-weight: 700; }
+
+  /* ---------- cards ---------- */
+  .cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 8px solid var(--c);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: grab; touch-action: none; user-select: none;
+  }
+  .card.placed { background: #f7f9fb; }
+  .card-head { display: flex; gap: 10px; align-items: flex-start; }
+  .num {
+    flex: none; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--c); color: #fff; font-weight: 700; font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-text { font-weight: 600; }
+  .card-guess { margin-top: 6px; font-size: 0.9rem; color: var(--muted); }
+  .card-result { margin-top: 8px; font-size: 0.95rem; display: none; }
+  .card-result .pts { font-weight: 700; }
+  .card-fact { margin-top: 4px; }
+  .checked .card { cursor: default; }
+  .checked .card-result { display: block; }
+
+  .floating {
+    position: fixed; z-index: 50; pointer-events: none;
+    width: 36px; height: 36px; border-radius: 50%;
+    color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  @media (max-width: 600px) {
+    body { font-size: 16px; }
+    h1 { font-size: 1.5rem; }
+    .timeline-wrap { padding: 10px 6px 6px; }
+    .col-label { font-size: 0.62rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <p class="sub" id="instructions"></p>
+
+  <div class="timeline-wrap">
+    <div class="band" id="band">
+      <div class="axis"></div>
+      <div class="band-hint" id="hint">Drag the numbered cards into a century</div>
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="checkBtn" disabled>Check</button>
+    <button id="againBtn">Play again</button>
+    <span class="status" id="status"></span>
+    <span class="score" id="score"></span>
+    <span class="status" id="legend" style="display:none">Ring colour: <b style="color:#2e7d4f">green</b> right century · <b style="color:#b8860b">yellow</b> one out · <b style="color:#c0392b">red</b> further out</span>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</main>
+
+<script>
+/* =====================================================================
+   CONTENT – edit this section to make a timeline on any topic.
+   firstCentury / lastCentury: e.g. 0 = the 0s (AD 1–99), 19 = the 1900s
+   showBC: adds one column for everything before AD 1
+   year: the correct year (use negative numbers for BC, e.g. -210)
+   text: shown on the card before checking (do not include the year)
+   fact: shown after checking
+   ===================================================================== */
+const CONTENT = {
+  title: "Timeline Challenge: China, the UK and Newcastle",
+  instructions: "Drag each card into the century when you think it happened. When all cards are placed, press Check.",
+  showBC: true,
+  firstCentury: 0,
+  lastCentury: 20,
+  events: [
+    { year: -210, text: "The Terracotta Army is buried with China's first emperor", fact: "More than 8,000 figures. It was found by farmers digging a well in 1974." },
+    { year: 105,  text: "Cai Lun presents his improved way of making paper to the emperor", fact: "His paper was made from tree bark, rags and old fishing nets." },
+    { year: 122,  text: "The Romans begin building Hadrian's Wall, which passes through Newcastle", fact: "It crossed England coast to coast. Wallsend, near Newcastle, is named after its end." },
+    { year: 868,  text: "The Diamond Sutra is printed in China", fact: "The world's earliest dated printed book. Today it is kept in the British Library in London." },
+    { year: 1080, text: 'A "new castle" is built by the River Tyne', fact: "It gave the city of Newcastle its name." },
+    { year: 1420, text: "The Forbidden City is completed in Beijing", fact: "Building it took 14 years and more than 100,000 skilled craftsmen." },
+    { year: 1564, text: "William Shakespeare is born", fact: "He went on to write Romeo and Juliet, Hamlet and Macbeth." },
+    { year: 1657, text: "Tea is sold in England for the first time", fact: "A London coffee house owner, Thomas Garway, sold it as a drink and as leaves." },
+    { year: 1829, text: "The Rocket steam locomotive is built in Newcastle", fact: "Built by Robert Stephenson, it won a famous competition to find the best locomotive for a new railway." },
+    { year: 1928, text: "The Tyne Bridge opens in Newcastle", fact: "It has the same designers as the Sydney Harbour Bridge, which opened 4 years later." },
+    { year: 2019, text: "Chang'e-4 makes the first ever landing on the far side of the Moon", fact: "No spacecraft had ever landed there before." }
+  ]
+};
+/* ===================================================================== */
+
+const COLOURS = ["#2f5d8a", "#b5541c", "#2e7d4f", "#7b3fa0", "#a8326e", "#1f7a8c", "#8a6d00", "#c0392b", "#4a5a9a", "#5d7a1f", "#9a4a2a", "#3d6b63"];
+const POINTS_EXACT = 100;   // right century
+const POINTS_CLOSE = 50;    // one century out
+
+const band = document.getElementById("band");
+const cardsEl = document.getElementById("cards");
+const checkBtn = document.getElementById("checkBtn");
+const statusEl = document.getElementById("status");
+const scoreEl = document.getElementById("score");
+const readout = document.getElementById("readout");
+const hint = document.getElementById("hint");
+
+document.getElementById("title").textContent = CONTENT.title;
+document.getElementById("instructions").textContent = CONTENT.instructions;
+document.title = CONTENT.title;
+
+/* Columns: index 0 = BC (if shown), then one per century. */
+const columns = [];
+if (CONTENT.showBC) columns.push({ label: "BC", century: -1 });
+for (let c = CONTENT.firstCentury; c <= CONTENT.lastCentury; c++) {
+  columns.push({ label: c === 0 ? "1–99" : c * 100 + "s", century: c });
+}
+const centuryOf = y => (y < 1 ? -1 : Math.floor(y / 100));
+const colIndexOfYear = y => {
+  const c = centuryOf(y);
+  const i = columns.findIndex(col => col.century === c);
+  return i >= 0 ? i : (c < 0 ? 0 : columns.length - 1);
+};
+const colLabel = i => (columns[i].century === -1 ? "BC" : "the " + columns[i].label);
+const fmtYear = y => (y < 0 ? Math.abs(y) + " BC" : "AD " + y);
+const colCentrePct = i => ((i + 0.5) / columns.length) * 100;
+
+let items = [];
+let checked = false;
+let colEls = [];
+
+function drawColumns() {
+  band.querySelectorAll(".col, .col-label").forEach(n => n.remove());
+  colEls = [];
+  const narrow = band.clientWidth / columns.length < 40;
+  columns.forEach((col, i) => {
+    const d = document.createElement("div");
+    d.className = "col" + (i % 2 ? " alt" : "");
+    d.style.left = (i / columns.length) * 100 + "%";
+    d.style.width = (1 / columns.length) * 100 + "%";
+    band.insertBefore(d, band.firstChild);
+    colEls.push(d);
+    if (narrow && (columns.length - 1 - i) % 2 === 1) return;
+    const l = document.createElement("div");
+    l.className = "col-label";
+    l.style.left = colCentrePct(i) + "%";
+    l.textContent = col.label;
+    band.appendChild(l);
+  });
+}
+
+function colAt(clientX) {
+  const r = band.getBoundingClientRect();
+  const f = Math.min(0.9999, Math.max(0, (clientX - r.left) / r.width));
+  return Math.floor(f * columns.length);
+}
+function overBand(x, y) {
+  const r = band.getBoundingClientRect();
+  return x >= r.left - 10 && x <= r.right + 10 && y >= r.top - 20 && y <= r.bottom + 20;
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function build() {
+  checked = false;
+  document.body.classList.remove("checked");
+  band.querySelectorAll(".marker").forEach(n => n.remove());
+  cardsEl.innerHTML = "";
+  scoreEl.textContent = "";
+  document.getElementById("legend").style.display = "none";
+  hint.style.display = "";
+  const evs = shuffle(CONTENT.events.slice());
+  items = evs.map((ev, i) => {
+    const colour = COLOURS[i % COLOURS.length];
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.setProperty("--c", colour);
+    card.innerHTML =
+      '<div class="card-head"><div class="num">' + (i + 1) + '</div><div class="card-text"></div></div>' +
+      '<div class="card-guess">Not placed yet</div>' +
+      '<div class="card-result"><div class="res-line"></div><div class="card-fact"></div></div>';
+    card.querySelector(".card-text").textContent = ev.text;
+    card.querySelector(".card-fact").textContent = ev.fact;
+    cardsEl.appendChild(card);
+    const it = { id: i, ev, colour, guess: null, cardEl: card, markerEl: null };
+    enableDrag(card, it);
+    return it;
+  });
+  updateStatus();
+}
+
+function makeMarker(it) {
+  const m = document.createElement("div");
+  m.className = "marker";
+  m.style.background = it.colour;
+  m.textContent = it.id + 1;
+  band.appendChild(m);
+  return m;
+}
+
+function placeMarker(it, colIndex) {
+  it.guess = colIndex;
+  if (!it.markerEl) {
+    it.markerEl = makeMarker(it);
+    enableDrag(it.markerEl, it);
+  }
+  it.cardEl.classList.add("placed");
+  it.cardEl.querySelector(".card-guess").textContent = "Your guess: " + colLabel(colIndex);
+  hint.style.display = "none";
+  layout();
+  updateStatus();
+}
+
+/* Stack markers in each column. */
+function layout() {
+  const colW = band.clientWidth / columns.length;
+  const size = Math.max(16, Math.min(34, colW - 4));
+  const gap = size + 4;
+  const base = 40;
+  const stacks = {};
+  items.filter(it => it.markerEl).sort((a, b) => a.id - b.id).forEach(it => {
+    const c = checked ? colIndexOfYear(it.ev.year) : it.guess;
+    const k = stacks[c] = (stacks[c] || 0) + 1;
+    const m = it.markerEl;
+    m.style.width = m.style.height = size + "px";
+    m.style.fontSize = Math.max(10, size * 0.45) + "px";
+    m.style.left = colCentrePct(c) + "%";
+    m.style.bottom = base + (k - 1) * gap + "px";
+  });
+  const tallest = Math.max(0, ...Object.values(stacks));
+  band.style.height = Math.max(230, base + tallest * gap + 24) + "px";
+}
+
+function updateStatus() {
+  const n = items.filter(it => it.guess !== null).length;
+  checkBtn.disabled = checked || n < items.length;
+  if (!checked) statusEl.textContent = n + " of " + items.length + " placed";
+}
+
+/* Drag with mouse or touch (pointer events). */
+function enableDrag(el, it) {
+  el.addEventListener("pointerdown", e => {
+    if (checked) return;
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    const fl = document.createElement("div");
+    fl.className = "floating";
+    fl.style.background = it.colour;
+    fl.textContent = it.id + 1;
+    document.body.appendChild(fl);
+    if (it.markerEl) it.markerEl.style.opacity = "0.3";
+    let hovered = null;
+    const move = ev => {
+      fl.style.left = ev.clientX + "px";
+      fl.style.top = ev.clientY + "px";
+      if (hovered !== null) colEls[hovered].classList.remove("hover");
+      hovered = null;
+      if (overBand(ev.clientX, ev.clientY)) {
+        hovered = colAt(ev.clientX);
+        colEls[hovered].classList.add("hover");
+        readout.style.display = "block";
+        const r = band.getBoundingClientRect();
+        readout.style.left = Math.min(Math.max((colCentrePct(hovered) / 100) * r.width, 30), r.width - 30) + "px";
+        readout.textContent = columns[hovered].label;
+      } else {
+        readout.style.display = "none";
+      }
+    };
+    move(e);
+    const up = ev => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+      fl.remove();
+      if (hovered !== null) colEls[hovered].classList.remove("hover");
+      readout.style.display = "none";
+      if (it.markerEl) it.markerEl.style.opacity = "";
+      if (ev.type === "pointerup" && overBand(ev.clientX, ev.clientY)) placeMarker(it, colAt(ev.clientX));
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+  });
+}
+
+function check() {
+  checked = true;
+  document.body.classList.add("checked");
+  let total = 0;
+  items.forEach(it => {
+    const correct = colIndexOfYear(it.ev.year);
+    const off = Math.abs(it.guess - correct);
+    const pts = off === 0 ? POINTS_EXACT : off === 1 ? POINTS_CLOSE : 0;
+    total += pts;
+
+    it.markerEl.style.boxShadow = "0 0 0 4px " + (off === 0 ? "#2e7d4f" : off === 1 ? "#f0b429" : "#c0392b");
+    const verdict = off === 0 ? "Right century!" : off === 1 ? "One century out" : off + " centuries out";
+    const colour = off === 0 ? "var(--good)" : off === 1 ? "var(--accent)" : "var(--warn)";
+    it.cardEl.querySelector(".res-line").innerHTML =
+      "Answer: <strong>" + fmtYear(it.ev.year) + "</strong> (" + colLabel(correct) + ") · " + verdict +
+      ' · <span class="pts" style="color:' + colour + '">+' + pts + "</span>";
+  });
+  layout();
+  statusEl.textContent = "";
+  document.getElementById("legend").style.display = "";
+  scoreEl.textContent = "Score: " + total + " / " + items.length * POINTS_EXACT;
+  checkBtn.disabled = true;
+}
+
+checkBtn.addEventListener("click", check);
+document.getElementById("againBtn").addEventListener("click", build);
+window.addEventListener("resize", () => { drawColumns(); layout(); });
+
+drawColumns();
+build();
+</script>
+</body>
+</html>

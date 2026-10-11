@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How a New Trend Spreads</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1f2933;
+    --muted: #5b6672;
+    --panel: #f5f7fa;
+    --accent: #2f5d8a;
+    --s: #a7b1bc;   /* not heard yet */
+    --a: #e66100;   /* adopted */
+    --l: #3a6ea5;   /* lost interest */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 16px 40px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 20px;
+    line-height: 1.45;
+  }
+  main { max-width: 1250px; margin: 0 auto; }
+  h1 { font-size: 2.1rem; margin: 24px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
+  .controls { background: var(--panel); border-radius: 12px; padding: 18px; }
+  .control { margin-bottom: 16px; }
+  .control label { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; font-size: 0.98rem; }
+  output { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  input[type=range] { width: 100%; height: 32px; accent-color: #3e4a57; }
+  .buttons { display: flex; gap: 10px; }
+  .btn {
+    flex: 1; font: inherit; font-weight: 700; font-size: 1.05rem; padding: 12px; border-radius: 8px;
+    border: none; cursor: pointer; color: #fff; background: var(--accent);
+  }
+  .btn.secondary { background: #fff; color: var(--ink); border: 2px solid #c7cfd8; }
+  button:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
+  .views { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .panel-title { font-weight: 700; margin-bottom: 6px; }
+  canvas { width: 100%; height: 420px; display: block; border-radius: 10px; background: #fbfcfd; border: 2px solid #d9dee4; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 6px; font-size: 1rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { width: 16px; height: 16px; border-radius: 50%; background: var(--c); display: inline-block; }
+  .legend b { font-variant-numeric: tabular-nums; }
+  .summary { margin-top: 10px; font-size: 1.05rem; min-height: 1.5em; }
+  @media (max-width: 1000px) {
+    .views { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 860px) {
+    body { font-size: 17px; }
+    h1 { font-size: 1.6rem; }
+    .layout { grid-template-columns: 1fr; }
+    canvas { height: 300px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>How a New Trend Spreads</h1>
+  <p class="sub">Each dot is a person. A new trend (a new word, a dance or a new technology) passes from person to person when they meet.</p>
+
+  <div class="layout">
+    <div class="controls">
+      <div class="control">
+        <label>Number of people <output id="peopleOut"></output></label>
+        <input type="range" id="people" min="50" max="400" step="10" value="200">
+      </div>
+      <div class="control">
+        <label>People who move around <output id="movingOut"></output></label>
+        <input type="range" id="moving" min="0" max="100" step="5" value="80">
+      </div>
+      <div class="control">
+        <label>Chance of passing it on when two people meet <output id="chanceOut"></output></label>
+        <input type="range" id="chance" min="5" max="100" step="5" value="60">
+      </div>
+      <div class="control">
+        <label>How long people stay interested <output id="lengthOut"></output></label>
+        <input type="range" id="length" min="3" max="40" step="1" value="14">
+      </div>
+      <div class="buttons">
+        <button class="btn" id="startBtn">Start</button>
+        <button class="btn secondary" id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="views">
+        <div>
+          <div class="panel-title">The group</div>
+          <canvas id="box"></canvas>
+        </div>
+        <div>
+          <div class="panel-title">Number of people over time</div>
+          <canvas id="graph"></canvas>
+        </div>
+      </div>
+      <div class="legend">
+        <span style="--c: var(--s)"><i></i>Not heard of it yet: <b id="nS">0</b></span>
+        <span style="--c: var(--a)"><i></i>Adopted it: <b id="nA">0</b></span>
+        <span style="--c: var(--l)"><i></i>Lost interest: <b id="nL">0</b></span>
+        <span>Day <b id="day">0</b></span>
+      </div>
+      <div class="summary" id="summary"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const S = 0, A = 1, L = 2;                    // not heard yet, adopted, lost interest
+const COLOURS = ["#a7b1bc", "#e66100", "#3a6ea5"];
+const FRAMES_PER_DAY = 12;                     // simulation speed
+const RADIUS = 5;                              // dot size in pixels
+
+const $ = id => document.getElementById(id);
+const box = $("box"), bctx = box.getContext("2d");
+const graph = $("graph"), gctx = graph.getContext("2d");
+
+let people = [], history = [], frame = 0, running = false, finished = false;
+let contacts = new Set();
+
+function setupCanvas(c, ctx) {
+  const dpr = window.devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function assignMovement() {
+  const share = +$("moving").value / 100;
+  const order = people.map((_, i) => i).sort(() => Math.random() - 0.5);
+  const nMoving = Math.round(share * people.length);
+  order.forEach((idx, k) => {
+    const p = people[idx];
+    p.moves = k < nMoving;
+    if (p.moves && p.vx === 0 && p.vy === 0) {
+      const ang = Math.random() * Math.PI * 2;
+      p.vx = Math.cos(ang) * p.speed; p.vy = Math.sin(ang) * p.speed;
+    }
+    if (!p.moves) { p.vx = 0; p.vy = 0; }
+  });
+}
+
+function reset() {
+  setupCanvas(box, bctx); setupCanvas(graph, gctx);
+  const W = box.clientWidth, H = box.clientHeight;
+  const n = +$("people").value;
+  const speed = Math.max(0.8, Math.min(W, H) / 260);
+  people = [];
+  for (let i = 0; i < n; i++) {
+    people.push({
+      x: RADIUS + Math.random() * (W - 2 * RADIUS),
+      y: RADIUS + Math.random() * (H - 2 * RADIUS),
+      vx: 0, vy: 0, speed, moves: false, state: S, since: 0
+    });
+  }
+  assignMovement();
+  // start with one person who has adopted the trend, ideally one who moves
+  const first = people.find(p => p.moves) || people[0];
+  first.state = A; first.since = 0;
+  history = [counts()];
+  frame = 0; finished = false; contacts = new Set();
+  running = false; $("startBtn").textContent = "Start";
+  $("summary").textContent = "";
+  render();
+}
+
+function counts() {
+  const c = [0, 0, 0];
+  people.forEach(p => c[p.state]++);
+  return c;
+}
+
+function step() {
+  const W = box.clientWidth, H = box.clientHeight;
+  const chance = +$("chance").value / 100;
+  const lengthFrames = +$("length").value * FRAMES_PER_DAY;
+  frame++;
+
+  people.forEach(p => {
+    if (!p.moves) return;
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < RADIUS) { p.x = RADIUS; p.vx = Math.abs(p.vx); }
+    if (p.x > W - RADIUS) { p.x = W - RADIUS; p.vx = -Math.abs(p.vx); }
+    if (p.y < RADIUS) { p.y = RADIUS; p.vy = Math.abs(p.vy); }
+    if (p.y > H - RADIUS) { p.y = H - RADIUS; p.vy = -Math.abs(p.vy); }
+  });
+
+  // find people who are touching, using a grid so it stays fast
+  const cell = RADIUS * 2;
+  const grid = new Map();
+  people.forEach((p, i) => {
+    const key = Math.floor(p.x / cell) + "," + Math.floor(p.y / cell);
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key).push(i);
+  });
+  const now = new Set();
+  people.forEach((p, i) => {
+    const cx = Math.floor(p.x / cell), cy = Math.floor(p.y / cell);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const list = grid.get((cx + dx) + "," + (cy + dy));
+      if (!list) continue;
+      list.forEach(j => {
+        if (j <= i) return;
+        const q = people[j];
+        if ((p.x - q.x) ** 2 + (p.y - q.y) ** 2 > (2 * RADIUS) ** 2) return;
+        const key = i + "-" + j;
+        now.add(key);
+        if (contacts.has(key)) return;           // only once per meeting
+        if (p.state === A && q.state === S && Math.random() < chance) { q.state = A; q.since = frame; }
+        else if (q.state === A && p.state === S && Math.random() < chance) { p.state = A; p.since = frame; }
+      });
+    }
+  });
+  contacts = now;
+
+  people.forEach(p => {
+    if (p.state === A && frame - p.since >= lengthFrames) p.state = L;
+  });
+
+  if (frame % FRAMES_PER_DAY === 0) history.push(counts());
+  const c = counts();
+  if (c[A] === 0 && !finished) finish();
+}
+
+function finish() {
+  finished = true; running = false;
+  $("startBtn").textContent = "Start";
+  history.push(counts());
+  let peak = 0, peakDay = 0;
+  history.forEach((h, d) => { if (h[A] > peak) { peak = h[A]; peakDay = d; } });
+  const reached = people.filter(p => p.state !== S).length;
+  const pct = Math.round((reached / people.length) * 100);
+  $("summary").innerHTML =
+    "The trend has died out. <b>" + pct + "%</b> of people adopted it at some point. " +
+    "The most people using it at the same time was <b>" + peak + "</b>, on day " + peakDay + ".";
+}
+
+function render() {
+  const W = box.clientWidth, H = box.clientHeight;
+  bctx.clearRect(0, 0, W, H);
+  [S, L, A].forEach(state => {                  // draw adopters on top
+    bctx.fillStyle = COLOURS[state];
+    people.forEach(p => {
+      if (p.state !== state) return;
+      bctx.beginPath(); bctx.arc(p.x, p.y, RADIUS, 0, Math.PI * 2); bctx.fill();
+    });
+  });
+
+  // graph
+  const GW = graph.clientWidth, GH = graph.clientHeight;
+  gctx.clearRect(0, 0, GW, GH);
+  const small = GW < 420;
+  const pad = { l: small ? 40 : 50, r: 12, t: 12, b: small ? 34 : 40 };
+  const pw = GW - pad.l - pad.r, ph = GH - pad.t - pad.b;
+  const n = people.length;
+  const days = Math.max(30, history.length - 1);
+  const X = d => pad.l + (d / days) * pw;
+  const Y = v => pad.t + ph - (v / n) * ph;
+  gctx.font = (small ? 12 : 14) + "px -apple-system, Segoe UI, Arial, sans-serif";
+  gctx.fillStyle = "#5b6672"; gctx.strokeStyle = "#e4e8ec"; gctx.lineWidth = 1;
+  gctx.textAlign = "right"; gctx.textBaseline = "middle";
+  for (let k = 0; k <= 4; k++) {
+    const v = (n * k) / 4;
+    gctx.beginPath(); gctx.moveTo(pad.l, Y(v)); gctx.lineTo(pad.l + pw, Y(v)); gctx.stroke();
+    gctx.fillText(Math.round(v), pad.l - 8, Y(v));
+  }
+  gctx.textAlign = "center"; gctx.textBaseline = "top";
+  const dStep = days <= 40 ? 10 : days <= 100 ? 20 : 50;
+  for (let d = 0; d <= days; d += dStep) gctx.fillText(d, X(d), pad.t + ph + 6);
+  gctx.fillText("Day", pad.l + pw / 2, pad.t + ph + (small ? 18 : 22));
+  gctx.strokeStyle = "#3e4a57"; gctx.lineWidth = 2;
+  gctx.beginPath(); gctx.moveTo(pad.l, pad.t); gctx.lineTo(pad.l, pad.t + ph); gctx.lineTo(pad.l + pw, pad.t + ph); gctx.stroke();
+  [S, L, A].forEach(state => {
+    gctx.strokeStyle = COLOURS[state]; gctx.lineWidth = small ? 3 : 4; gctx.lineJoin = "round";
+    gctx.beginPath();
+    history.forEach((h, d) => (d ? gctx.lineTo(X(d), Y(h[state])) : gctx.moveTo(X(d), Y(h[state]))));
+    gctx.stroke();
+  });
+
+  const c = counts();
+  $("nS").textContent = c[S]; $("nA").textContent = c[A]; $("nL").textContent = c[L];
+  $("day").textContent = Math.floor(frame / FRAMES_PER_DAY);
+}
+
+function loop() {
+  if (!running) return;
+  step();
+  render();
+  requestAnimationFrame(loop);
+}
+
+function updateLabels() {
+  $("peopleOut").textContent = $("people").value;
+  $("movingOut").textContent = $("moving").value + "%";
+  $("chanceOut").textContent = $("chance").value + "%";
+  $("lengthOut").textContent = $("length").value + " days";
+}
+
+$("startBtn").addEventListener("click", () => {
+  if (finished) reset();
+  running = !running;
+  $("startBtn").textContent = running ? "Pause" : "Start";
+  if (running) loop();
+});
+$("resetBtn").addEventListener("click", reset);
+$("people").addEventListener("input", () => { updateLabels(); reset(); });
+$("moving").addEventListener("input", () => { updateLabels(); assignMovement(); if (!running) render(); });
+["chance", "length"].forEach(id => $(id).addEventListener("input", updateLabels));
+window.addEventListener("resize", () => {
+  setupCanvas(box, bctx); setupCanvas(graph, gctx);
+  const W = box.clientWidth, H = box.clientHeight;
+  people.forEach(p => { p.x = Math.min(Math.max(p.x, RADIUS), W - RADIUS); p.y = Math.min(Math.max(p.y, RADIUS), H - RADIUS); });
+  render();
+});
+
+updateLabels();
+reset();
+</script>
+</body>
+</html>
